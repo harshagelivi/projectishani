@@ -1,4 +1,8 @@
 ishani
 ======
 
-A Simple Folder sync
+A Simple Folder synchronisation application
+
+Developed in python and bash
+
+
