@@ -20,6 +20,13 @@ def sock_send(fname, floc, code):
 		
 		if code=="CREATE" :
 			sock.send(fname)
+			sock.close()
+
+			HOST =  ''   # The remote host
+			PORT = 12345# The same port as used by the server
+			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+			sock.connect((HOST, PORT))
 			fd = open(floc,'rb')
 			dat = fd.read(1024)
 			while dat:

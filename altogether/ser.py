@@ -7,8 +7,8 @@ ishani_ser='/home/madhu/ishani-ser/'
 ishani_trash='/home/madhu/ishani-trash/'
 	
 
-HOST = ''                 # Symbolic name meaning all available interfaces
-PORT = 12345              # Arbitrary non-privileged port
+HOST = ''                 	# Symbolic name meaning all available interfaces
+PORT = 12345              	# Arbitrary non-privileged port
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind((HOST, PORT))
@@ -26,13 +26,16 @@ while True:
 		fname=str(conn.recv(1024))
 		floc=ishani_ser+fname
 		fd = open(floc, 'wb')
+		conn.close()
+		conn, addr = sock.accept()
 		if conn:
 			dat = conn.recv(1024)
 			if dat:
 				while dat:
 					fd.write(dat)
-				dat=conn.recv(1024)
+					dat=conn.recv(1024)
 				fd.close()
+				conn.close()
 		
 	elif code == "DELETE":
 		fname=str(conn.recv(1024))
