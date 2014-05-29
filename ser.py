@@ -1,6 +1,7 @@
 # Echo server program
 import socket
 import os
+import shutil
 
 ishani='/home/harsha/ishani/'
 ishani_ser='/home/harsha/ishani-ser/'
@@ -19,15 +20,24 @@ fromq=[]
 while True:
 	conn, addr = sock.accept()
 	code=str(conn.recv(1024))
-	print code
 	conn.close()
 	conn, addr = sock.accept()
-	fname=str(conn.recv(1024))
-	print code,"  ",fname
+	relative_name=str(conn.recv(1024))
+	conn.close()	
+	server_path=ishani_ser+relative_name
+	print code,"  ",relative_name
+	if code=="MKDIR":
+		os.mkdir(server_path)
+	if code == "RMDIR":
+		shutil.rmtree(server_path)	
+	if (code=="MVDIR" or code=="MOVE"):
+		conn, addr = sock.accept()
+		src_name=str(conn.recv(1024))
+		src_path=ishani_ser+src_name
+		print src_name," ddddddddddddddd"
+		shutil.move(src_path, server_path)
 	if (code == "CREATE" or code=="MOVED_TO"):
-		floc=ishani_ser+fname
-		fd = open(floc, 'wb')
-		conn.close()
+		fd = open(server_path, 'wb')
 		conn, addr = sock.accept()
 		if conn:
 			dat = conn.recv(1024)
@@ -36,11 +46,10 @@ while True:
 					fd.write(dat)
 					dat=conn.recv(1024)
 				fd.close()
+				conn.close()
 		
-	elif (code == "DELETE" or code=="MOVED_FROM"):
-		floc=ishani_ser+fname
-		os.remove(floc)
-	conn.close()	
+	if (code == "DELETE" or code=="MOVED_FROM"):
+		os.remove(server_path)
 sock.close()
 print 'closed socket'
 
