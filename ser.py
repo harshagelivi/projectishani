@@ -41,8 +41,11 @@ class myThread (threading.Thread):
 		print code
 		conn.close()
 		conn, addr = sock.accept()
-		if code == "CREATE":
+		if (code == "CREATE" or code=="MOVED_TO"):
 			fname=str(conn.recv(1024))
+			if(fname[-1]=='~' or fname[0]=='.'):
+				conn.close()
+				continue;
 			floc=folder_ser+fname
 			fd = open(floc, 'wb')
 			conn.close()
@@ -54,23 +57,14 @@ class myThread (threading.Thread):
 						fd.write(dat)
 						dat=conn.recv(1024)
 					fd.close()		
-		elif code == "DELETE":
+		elif (code == "DELETE" or code=="MOVED_FROM"):
 			fname=str(conn.recv(1024))
+			if(fname[-1]=='~' or fname[0]=='.'):
+				conn.close()
+				continue;
 			print fname
 			floc=folder_ser+fname
-			os.system("rm "+floc+ " ;")
-		elif code == "MOVED FROM":
-			fname=str(conn.recv(1024))		
-			from_stack.append(fname);
-			floc1=folder_ser+fname
-			floc2=folder_trash+fname
-			os.system("mv "+floc1+ "  "+floc2+" ;")
-		elif code == "MOVED TO":
-			fname1 = from_stack.pop()	
-			fname2=str(conn.recv(1024))		
-			floc1=folder_trash+fname1
-			floc2=folder_ser+fname2
-			os.system("mv "+floc1+ "  "+floc2+" ;")
+			os.remove(floc)
 		conn.close()
 		print "closed the connection"
         sock.close()
@@ -80,7 +74,7 @@ threads = []
 
 # Create new threads
 thread1 = myThread(1, "Thread-1", get_a_port(), "ishani");
-thread2 = myThread(1, "Thread-2", get_a_port(), "cutie-pie");
+thread2 = myThread(2, "Thread-2", get_a_port(), "cutie-pie");
 
 # Start new Threads
 thread1.start()

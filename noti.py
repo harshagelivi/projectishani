@@ -25,6 +25,7 @@ class myThread (threading.Thread):
 	
 
 def sock_send(fname, floc, code):
+	if(fname[-1]!='~' and fname[0] !='.'):
 		HOST =  ''   # The remote host
 		PORT = 12345# The same port as used by the server
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -38,8 +39,8 @@ def sock_send(fname, floc, code):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.connect((HOST, PORT))
-		
-		if code=="CREATE" :
+	
+		if (code=="CREATE" or code=="MOVED_TO"):
 			sock.send(fname)
 			sock.close()
 
@@ -56,44 +57,33 @@ def sock_send(fname, floc, code):
 				dat=fd.read(1024)
 			sock.close()
 			fd.close()
-		elif code=="DELETE" :
+		elif code=="DELETE" or code=="MOVED_FROM":
 			sock.send(fname)
 			sock.close()
-		elif code=="MOVED FROM" :
-			sock.send(fname)
-			sock.close()
-		elif code=="MOVED TO" :
-			sock.send(fname)
-			sock.close()
-		
+	
 class MyProcessing(ProcessEvent):
 	def __init__(self):
 		pass
 
 	def process_IN_CLOSE_WRITE(self, event):
 		print "in close write ",event.pathname
-		fname=event.name.replace(' ','\ ')
-		notification_queue.append((fname, event.pathname, "CREATE"))
+		notification_queue.append((event.name, event.pathname, "CREATE"))
 		
 	def process_IN_DELETE(self, event):
 		print "in delete ",event.pathname
-		fname=event.name.replace(' ','\ ')
-		notification_queue.append((fname, event.pathname, "DELETE"))
+		notification_queue.append((event.name, event.pathname, "DELETE"))
 
 	def process_IN_CREATE(self, event):
 		print "in create ",event.pathname
-		fname=event.name.replace(' ','\ ')		
-		'''sock_send(fname, event.pathname, "ISDIR")'''
+		notification_queue.append((event.name, event.pathname, "CREATE"))
 
 	def process_IN_MOVED_FROM(self, event):
 		print "in moved from of file ",event.pathname
-		fname=event.name.replace(' ','\ ')		
-		notification_queue.append((fname, event.pathname, "MOVED FROM"))
+		notification_queue.append((event.name, event.pathname, "MOVED_FROM"))
 
 	def process_IN_MOVED_TO(self, event):
 		print "in moved from of file ",event.pathname
-		fname=event.name.replace(' ','\ ')		
-		notification_queue.append((fname, event.pathname, "MOVED TO"))
+		notification_queue.append((event.name, event.pathname, "MOVED_TO"))
 
 	def process_default(self, event):
 		print "in default ",event.pathname
