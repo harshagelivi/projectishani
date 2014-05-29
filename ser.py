@@ -31,7 +31,7 @@ class myThread (threading.Thread):
 	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	sock.bind((HOST, PORT))
 	sock.listen(10)
-	fromq=[]
+	from_stack=[]
 	folder=root_path+self.folder_name+'/'
 	folder_ser=root_path+self.folder_name+'-ser/'
 	folder_trash=root_path+self.folder_name+'-trash/'
@@ -59,14 +59,14 @@ class myThread (threading.Thread):
 			print fname
 			floc=folder_ser+fname
 			os.system("rm "+floc+ " ;")
-		elif code == "CUT":
+		elif code == "MOVED FROM":
 			fname=str(conn.recv(1024))		
-			fromq.append(fname);
+			from_stack.append(fname);
 			floc1=folder_ser+fname
 			floc2=folder_trash+fname
 			os.system("mv "+floc1+ "  "+floc2+" ;")
-		elif code == "PASTE":
-			fname1 = fromq.pop()	
+		elif code == "MOVED TO":
+			fname1 = from_stack.pop()	
 			fname2=str(conn.recv(1024))		
 			floc1=folder_trash+fname1
 			floc2=folder_ser+fname2
@@ -76,17 +76,19 @@ class myThread (threading.Thread):
         sock.close()
         print "closed the socket"
 
-
 threads = []
 
 # Create new threads
 thread1 = myThread(1, "Thread-1", get_a_port(), "ishani");
+thread2 = myThread(1, "Thread-2", get_a_port(), "cutie-pie");
 
 # Start new Threads
 thread1.start()
+thread2.start()
 
 # Add threads to thread list
 threads.append(thread1)
+threads.append(thread2)
 
 # Wait for all threads to complete
 for t in threads:

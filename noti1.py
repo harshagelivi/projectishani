@@ -26,7 +26,7 @@ class myThread (threading.Thread):
 
 def sock_send(fname, floc, code):
 		HOST =  ''   # The remote host
-		PORT = 12345# The same port as used by the server
+		PORT = 12346# The same port as used by the server
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.connect((HOST, PORT))
@@ -34,7 +34,7 @@ def sock_send(fname, floc, code):
 		sock.close()
 
 		HOST =  ''   # The remote host
-		PORT = 12345# The same port as used by the server
+		PORT = 12346# The same port as used by the server
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.connect((HOST, PORT))
@@ -44,7 +44,7 @@ def sock_send(fname, floc, code):
 			sock.close()
 
 			HOST =  ''   # The remote host
-			PORT = 12345# The same port as used by the server
+			PORT = 12346# The same port as used by the server
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			sock.connect((HOST, PORT))
@@ -104,9 +104,9 @@ class MyProcessing(ProcessEvent):
 
 wm = WatchManager()			#somethng which creates a manager like thing to look wat all folders are to take care of
 mask = pyinotify.ALL_EVENTS	#wat all events r to be notified
-wm.add_watch('/home/madhu/trials/ishani', mask, rec=True,auto_add=True)
+wm.add_watch('/home/madhu/trials/cutie-pie', mask, rec=True,auto_add=True)
 notifier = Notifier(wm, MyProcessing())	# connecting d manager and methods to call
-thread1=myThread(1,"ishani-thread")
+thread1=myThread(1,"cutie-pie-thread")
 thread1.start()
 notifier.loop()	# start
 print "thread started"
