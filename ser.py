@@ -34,7 +34,6 @@ while True:
 		conn, addr = sock.accept()
 		src_name=str(conn.recv(1024))
 		src_path=ishani_ser+src_name
-		print src_name," ddddddddddddddd"
 		shutil.move(src_path, server_path)
 	if (code == "CREATE" or code=="MOVED_TO"):
 		fd = open(server_path, 'wb')

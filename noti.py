@@ -115,7 +115,7 @@ class MyProcessing(ProcessEvent):
 
 	def process_default(self, event):
 		#print "in default ",event.pathname
-		pass
+		self.buff_move_from_fun()
 
 wm = WatchManager()			#somethng which creates a manager like thing to look wat all folders are to take care of
 mask = pyinotify.ALL_EVENTS	#wat all events r to be notified
