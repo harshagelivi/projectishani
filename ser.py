@@ -1,64 +1,94 @@
-# Echo server program
+#!/usr/bin/python
+
+import threading
 import socket
+import time
 import os
+available_port=12344
+root_path='/home/madhu/trials/'
 
-ishani='/home/madhu/ishani/'
-ishani_ser='/home/madhu/ishani-ser/'
-ishani_trash='/home/madhu/ishani-trash/'
-	
 
-HOST = ''                 	# Symbolic name meaning all available interfaces
-PORT = 12345              	# Arbitrary non-privileged port
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-sock.bind((HOST, PORT))
-sock.listen(10)
 
-fromq=[]
 
-while True:
-	conn, addr = sock.accept()
-	code=str(conn.recv(1024))
-	print code
-	conn.close()
-	conn, addr = sock.accept()
-	if code == "CREATE":
-		fname=str(conn.recv(1024))
-		floc=ishani_ser+fname
-		fd = open(floc, 'wb')
+def get_a_port():
+	global available_port
+	available_port=available_port+1
+	return available_port
+
+class myThread (threading.Thread):
+    def __init__(self, threadID, name, port_num, folder_name):
+        threading.Thread.__init__(self)
+        self.threadID = threadID
+        self.name = name
+	self.port_num=port_num
+	self.folder_name=folder_name
+
+    def run(self):
+	global root_path
+	HOST = ''                 	# Symbolic name meaning all available interfaces
+	PORT = self.port_num	  	# Arbitrary non-privileged port
+	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+	sock.bind((HOST, PORT))
+	sock.listen(10)
+	fromq=[]
+	folder=root_path+self.folder_name+'/'
+	folder_ser=root_path+self.folder_name+'-ser/'
+	folder_trash=root_path+self.folder_name+'-trash/'
+	while True:
+		conn, addr = sock.accept()
+		code=str(conn.recv(1024))
+		print code
 		conn.close()
 		conn, addr = sock.accept()
-		if conn:
-			dat = conn.recv(1024)
-			if dat:
-				while dat:
-					fd.write(dat)
-					dat=conn.recv(1024)
-				fd.close()
-				conn.close()
-		
-	elif code == "DELETE":
-		fname=str(conn.recv(1024))
-		print fname
-		floc=ishani_ser+fname
-		os.system("rm "+floc+ " ;")
-	elif code == "CUT":
-		fname=str(conn.recv(1024))		
-		fromq.append(fname);
-		floc1=ishani_ser+fname
-		floc2=ishani_trash+fname
-		os.system("mv "+floc1+ "  "+floc2+" ;")
-	elif code == "PASTE":
-		fname1 = fromq.pop()	
-		fname2=str(conn.recv(1024))		
-		floc1=ishani_trash+fname1
-		floc2=ishani_ser+fname2
-		os.system("mv "+floc1+ "  "+floc2+" ;")
-	conn.close()
+		if code == "CREATE":
+			fname=str(conn.recv(1024))
+			floc=folder_ser+fname
+			fd = open(floc, 'wb')
+			conn.close()
+			conn, addr = sock.accept()
+			if conn:
+				dat = conn.recv(1024)
+				if dat:
+					while dat:
+						fd.write(dat)
+						dat=conn.recv(1024)
+					fd.close()		
+		elif code == "DELETE":
+			fname=str(conn.recv(1024))
+			print fname
+			floc=folder_ser+fname
+			os.system("rm "+floc+ " ;")
+		elif code == "CUT":
+			fname=str(conn.recv(1024))		
+			fromq.append(fname);
+			floc1=folder_ser+fname
+			floc2=folder_trash+fname
+			os.system("mv "+floc1+ "  "+floc2+" ;")
+		elif code == "PASTE":
+			fname1 = fromq.pop()	
+			fname2=str(conn.recv(1024))		
+			floc1=folder_trash+fname1
+			floc2=folder_ser+fname2
+			os.system("mv "+floc1+ "  "+floc2+" ;")
+		conn.close()
+		print "closed the connection"
+        sock.close()
+        print "closed the socket"
 
-					
-sock.close()
-print 'closed socket'
 
+threads = []
 
+# Create new threads
+thread1 = myThread(1, "Thread-1", get_a_port(), "ishani");
 
+# Start new Threads
+thread1.start()
+
+# Add threads to thread list
+threads.append(thread1)
+
+# Wait for all threads to complete
+for t in threads:
+    t.join()
+print "Exiting Main Thread"

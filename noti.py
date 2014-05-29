@@ -58,6 +58,10 @@ class MyProcessing(ProcessEvent):
 		print "in delete ",event.pathname
 		sock_send(event.name, event.pathname, "DELETE")
 
+	def process_IN_CREATE(self, event):
+		print "in create ",event.pathname
+		'''sock_send(event.name, event.pathname, "ISDIR")'''
+
 	def process_IN_MOVED_FROM(self, event):
 		print "in moved from of file ",event.pathname
 		sock_send(event.name, event.pathname, "CUT")
@@ -75,7 +79,6 @@ class MyProcessing(ProcessEvent):
 
 wm = WatchManager()			#somethng which creates a manager like thing to look wat all folders are to take care of
 mask = pyinotify.ALL_EVENTS	#wat all events r to be notified
-wm.add_watch('/home/madhu/ishani', mask, rec=True)
-
+wm.add_watch('/home/madhu/trials/ishani', mask, rec=True,auto_add=True)
 notifier = Notifier(wm, MyProcessing())	# connecting d manager and methods to call
 notifier.loop()	# start
