@@ -30,7 +30,7 @@ class myThread (threading.Thread):
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	sock.bind((HOST, PORT))
-	sock.listen(10)
+	sock.listen(30)
 	from_stack=[]
 	folder=root_path+self.folder_name+'/'
 	folder_ser=root_path+self.folder_name+'-ser/'
@@ -59,12 +59,38 @@ class myThread (threading.Thread):
 					fd.close()		
 		elif (code == "DELETE" or code=="MOVED_FROM"):
 			fname=str(conn.recv(1024))
-			if(fname[-1]=='~' or fname[0]=='.'):
-				conn.close()
-				continue;
 			print fname
 			floc=folder_ser+fname
-			os.remove(floc)
+			try:
+				os.remove(os.path.join(folder_ser,fname))
+			except:
+				pass
+		elif (code=="MKDIR"):
+			fname=str(conn.recv(1024))
+			print fname
+			try:
+				os.mkdir(os.path.join(folder_ser,fname))
+			except:
+				pass
+		elif (code=="RMDIR"):
+			fname=str(conn.recv(1024))
+			print fname
+			try:
+				os.rmdir(os.path.join(folder_ser,fname))
+			except:
+				pass
+		elif (code=="RENAMEDIR"):
+			fname=str(conn.recv(1024))
+			print "fname  : "+fname			
+			conn.close()
+			conn, addr = sock.accept()			
+			prevfname=str(conn.recv(1024))
+			print "prevfname  : "+prevfname
+			print "---"+ os.path.join(folder_ser, prevfname)+"---"+os.path.join(folder_ser, fname)
+			try:
+				os.rename(os.path.join(folder_ser, prevfname), os.path.join(folder_ser, fname))
+			except:
+				pass
 		conn.close()
 		print "closed the connection"
         sock.close()
@@ -74,7 +100,7 @@ threads = []
 
 # Create new threads
 thread1 = myThread(1, "Thread-1", get_a_port(), "ishani");
-thread2 = myThread(2, "Thread-2", get_a_port(), "cutie-pie");
+thread2 = myThread(2, "Thread-2", get_a_port(), "kiwi");
 
 # Start new Threads
 thread1.start()
