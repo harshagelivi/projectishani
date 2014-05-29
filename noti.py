@@ -31,7 +31,6 @@ def sock_send(fname, floc, code):
 			fd = open(floc,'rb')
 			dat = fd.read(1024)
 			while dat:
-				print "sending data"
 				sock.send(dat)
 				dat=fd.read(1024)
 			sock.close()
@@ -44,24 +43,24 @@ class MyProcessing(ProcessEvent):
 		pass
 
 	def process_IN_CLOSE_WRITE(self, event):
-		print "in close write ",event.pathname
+		print "in CLOSE WRITE ",event.pathname
 		sock_send(event.name, event.pathname, "CREATE")
 		
 	def process_IN_DELETE(self, event):
-		print "in delete ",event.pathname
+		print "in DELETE ",event.pathname
 		sock_send(event.name, event.pathname, "DELETE")
 
-	def process_IN_CREATE(self, event):
-		print "in create ",event.pathname
-		'''sock_send(event.name, event.pathname, "ISDIR")'''
-
 	def process_IN_MOVED_FROM(self, event):
-		print "in moved from of file ",event.pathname
+		print "in MOVED_FROM of file ",event.pathname
 		sock_send(event.name, event.pathname, "MOVED_FROM")
 
 	def process_IN_MOVED_TO(self, event):
-		print "in moved from of file ",event.pathname
+		print "in MOVED_TO of file ",event.pathname
 		sock_send(event.name, event.pathname, "MOVED_TO")
+
+	def process_IN_CREATE(self, event):
+		print "in CREATE of file ",event.pathname
+		sock_send(event.name, event.pathname, "CREATE")
 
 	def process_default(self, event):
 		#print "in default ",event.pathname

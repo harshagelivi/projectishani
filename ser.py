@@ -22,8 +22,9 @@ while True:
 	print code
 	conn.close()
 	conn, addr = sock.accept()
+	fname=str(conn.recv(1024))
+	print code,"  ",fname
 	if (code == "CREATE" or code=="MOVED_TO"):
-		fname=str(conn.recv(1024))
 		floc=ishani_ser+fname
 		fd = open(floc, 'wb')
 		conn.close()
@@ -37,8 +38,6 @@ while True:
 				fd.close()
 		
 	elif (code == "DELETE" or code=="MOVED_FROM"):
-		fname=str(conn.recv(1024))
-		print fname
 		floc=ishani_ser+fname
 		os.remove(floc)
 	conn.close()	
