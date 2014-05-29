@@ -113,6 +113,8 @@ class MyProcessing(ProcessEvent):
 		global moved_from_name
 		global moved_from_loc
 		if (event.dir):
+			if(moved_from_flag==1):
+				sock_send(moved_from_name, moved_from_loc, "RMDIR")
 			moved_from_flag	=	1
 			moved_from_name =	event.name
 			moved_from_loc	=	event.pathname
