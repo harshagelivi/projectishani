@@ -1,25 +1,49 @@
 # Echo server program
 import socket
+import os
 
-HOST = ''                 # Symbolic name meaning all available interfaces
-PORT = 12345              # Arbitrary non-privileged port
+ishani='/home/harsha/ishani/'
+ishani_ser='/home/harsha/ishani-ser/'
+ishani_trash='/home/harsha/ishani-trash/'
+	
+
+HOST = ''                 	# Symbolic name meaning all available interfaces
+PORT = 12345              	# Arbitrary non-privileged port
 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 sock.bind((HOST, PORT))
-sock.listen(3)
+sock.listen(10)
+
+fromq=[]
+
 while True:
 	conn, addr = sock.accept()
-	if conn:
-		print 'got a conection from '+str(addr)
-		fd = open('file1.txt','rb')
-		dat = fd.read(1024)
-		print 'opened and sending the file....'
-		while dat:
-			conn.send(dat)
-			dat=fd.read(1024)
+	code=str(conn.recv(1024))
+	print code
+	conn.close()
+	conn, addr = sock.accept()
+	if (code == "CREATE" or code=="MOVED_TO"):
+		fname=str(conn.recv(1024))
+		floc=ishani_ser+fname
+		fd = open(floc, 'wb')
 		conn.close()
-		fd.close()
-		print 'closed the connection and file.'
-		print 'successfully sent the file.'
+		conn, addr = sock.accept()
+		if conn:
+			dat = conn.recv(1024)
+			if dat:
+				while dat:
+					fd.write(dat)
+					dat=conn.recv(1024)
+				fd.close()
+		
+	elif (code == "DELETE" or code=="MOVED_FROM"):
+		fname=str(conn.recv(1024))
+		print fname
+		floc=ishani_ser+fname
+		os.remove(floc)
+	conn.close()	
 sock.close()
 print 'closed socket'
+
+
+

@@ -1,9 +1,9 @@
-ishani
+projectishani
 ======
 
-<<<<<<< HEAD
+
 A Simple Folder synchronisation application
 
-Developed in python and bash
+Developed in python.
 
 
