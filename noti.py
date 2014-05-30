@@ -4,8 +4,9 @@ import socket
 import threading
 
 from pyinotify import WatchManager, Notifier, ThreadedNotifier, EventsCodes, ProcessEvent
-lk = threading.Semaphore()
-lk1 = threading.Semaphore()
+
+method_sem = threading.Semaphore()
+static_var_sem = threading.Semaphore()
 ishani='/home/harsha/ishani/'
 buff_src_path=""
 def sock_send(fname, floc, code):
@@ -61,13 +62,13 @@ class MyProcessing(ProcessEvent):
 		pathname=""
 
 	def process_IN_CLOSE_WRITE(self, event):
-		lk.acquire()
+		method_sem.acquire()
 		print "in CLOSE WRITE ",event.pathname
 		self.buff_move_from_fun()
 		sock_send(event.name, event.pathname, "CREATE")
-		lk.release()		
+		method_sem.release()		
 	def process_IN_DELETE(self, event):
-		lk.acquire()	
+		method_sem.acquire()	
 		print "in DELETE ",event.pathname
 		self.buff_move_from_fun()
 		if(event.name!=""):
@@ -75,10 +76,10 @@ class MyProcessing(ProcessEvent):
 				sock_send(event.name, event.pathname, "RMDIR")
 			else:
 				sock_send(event.name, event.pathname, "DELETE")
-		lk.release()
+		method_sem.release()
 	def process_IN_MOVED_FROM(self, event):
-		lk.acquire()
-		lk1.acquire()	
+		method_sem.acquire()
+		static_var_sem.acquire()	
 		print "in MOVED_FROM of file ",event.pathname
 		self.move_from_flag=1
 		self.buff_dir=event.dir
@@ -86,10 +87,10 @@ class MyProcessing(ProcessEvent):
 		self.pathname=event.pathname
 		global buff_src_path
 		buff_src_path=event.pathname
-		lk1.release()
-		lk.release()		
+		static_var_sem.release()
+		method_sem.release()		
 	def buff_move_from_fun(self):
-		lk1.acquire()
+		static_var_sem.acquire()
 		if self.move_from_flag==1:
 			if(self.name!=""):
 				if(self.buff_dir):
@@ -100,11 +101,11 @@ class MyProcessing(ProcessEvent):
 			self.name=""
 			self.pathname=""
 			self.buff_dir=False
-		lk1.release()	
+		static_var_sem.release()	
 	def process_IN_MOVED_TO(self, event):
 		print "in MOVED_TO of file ",event.pathname
-		lk.acquire()
-		lk1.acquire()
+		method_sem.acquire()
+		static_var_sem.acquire()
 		if self.move_from_flag==1:
 			if(event.name!="" and self.name != ""):
 				if(event.dir):
@@ -121,10 +122,10 @@ class MyProcessing(ProcessEvent):
 					sock_send(event.name, event.pathname, "MKDIR")	
 				else:
 					sock_send(event.name, event.pathname, "MOVED_TO")
-		lk1.release()			
-		lk.release()	
+		static_var_sem.release()			
+		method_sem.release()	
 	def process_IN_CREATE(self, event):
-		lk.acquire()	
+		method_sem.acquire()	
 		print "in CREATE of file ",event.pathname
 		self.buff_move_from_fun()
 		if(event.name!=""):
@@ -132,7 +133,7 @@ class MyProcessing(ProcessEvent):
 				sock_send(event.name, event.pathname, "MKDIR")
 			else:
 				sock_send(event.name, event.pathname, "CREATE")
-		lk.release()
+		method_sem.release()
 	def process_default(self, event):
 		#print "in default ",event.pathname
 		self.buff_move_from_fun()
