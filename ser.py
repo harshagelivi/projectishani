@@ -100,14 +100,17 @@ threads = []
 # Create new threads
 thread1 = myThread(1, "Thread-1", get_a_port(), "ishani");
 thread2 = myThread(2, "Thread-2", get_a_port(), "kiwi");
+thread3 = myThread(3, "Thread-3", get_a_port(), "mango");
 
 # Start new Threads
 thread1.start()
 thread2.start()
+thread3.start()
 
 # Add threads to thread list
 threads.append(thread1)
 threads.append(thread2)
+threads.append(thread3)
 
 # Wait for all threads to complete
 for t in threads:

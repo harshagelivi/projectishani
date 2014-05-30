@@ -3,7 +3,7 @@ import threading
 import pyinotify
 import socket
 from collections import deque
-
+import time
 notification_queue = deque()
 
 from pyinotify import WatchManager, Notifier, ThreadedNotifier, EventsCodes, ProcessEvent
@@ -27,6 +27,7 @@ class myThread (threading.Thread):
 			p=notification_queue.popleft()
 			print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
 			sock_send(p[0],p[1],p[2],p[3])
+			time.sleep(.005)
 
 def sock_send(fname, floc, floc1, code):
 

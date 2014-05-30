@@ -7,7 +7,7 @@ from collections import deque
 notification_queue = deque()
 
 from pyinotify import WatchManager, Notifier, ThreadedNotifier, EventsCodes, ProcessEvent
-path="/home/madhu/trials/kiwi/"
+path="/home/madhu/trials/mango/"
 moved_from_flag	=	0
 moved_from_name =	''
 moved_from_loc	=	''
@@ -40,7 +40,7 @@ def sock_send(fname, floc, floc1, code):
 		print "moved_from_name", moved_from_name
 
 		HOST =  ''   # The remote host
-		PORT = 12346# The same port as used by the server
+		PORT = 12347# The same port as used by the server
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.connect((HOST, PORT))
@@ -48,7 +48,7 @@ def sock_send(fname, floc, floc1, code):
 		sock.close()
 
 		HOST =  ''   # The remote host
-		PORT = 12346# The same port as used by the server
+		PORT = 12347# The same port as used by the server
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.connect((HOST, PORT))
@@ -57,7 +57,7 @@ def sock_send(fname, floc, floc1, code):
 			sock.send(fname)
 			sock.close()
 			HOST =  ''   # The remote host
-			PORT = 12346# The same port as used by the server
+			PORT = 12347# The same port as used by the server
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			sock.connect((HOST, PORT))
@@ -71,7 +71,7 @@ def sock_send(fname, floc, floc1, code):
 			sock.send(fname)
 			sock.close()
 			HOST =  ''   # The remote host
-			PORT = 12346# The same port as used by the server
+			PORT = 12347# The same port as used by the server
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			sock.connect((HOST, PORT))
@@ -150,9 +150,9 @@ class MyProcessing(ProcessEvent):
 
 wm = WatchManager()			#somethng which creates a manager like thing to look wat all folders are to take care of
 mask = pyinotify.ALL_EVENTS	#wat all events r to be notified
-wm.add_watch('/home/madhu/trials/kiwi', mask, rec=True,auto_add=True)
+wm.add_watch('/home/madhu/trials/mango', mask, rec=True,auto_add=True)
 notifier = Notifier(wm, MyProcessing())	# connecting d manager and methods to call
-thread1=myThread(1,"kiwi-thread")
+thread1=myThread(1,"mango-thread")
 thread1.start()
 notifier.loop()	# start
 print "thread started"
