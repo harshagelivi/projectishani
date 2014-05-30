@@ -48,7 +48,8 @@ while True:
 				conn.close()
 		
 	if (code == "DELETE" or code=="MOVED_FROM"):
-		os.remove(server_path)
+		if(os.path.exists(server_path)):
+			os.remove(server_path)
 sock.close()
 print 'closed socket'
 

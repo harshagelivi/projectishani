@@ -1,8 +1,11 @@
 import os
 import pyinotify
 import socket
-from pyinotify import WatchManager, Notifier, ThreadedNotifier, EventsCodes, ProcessEvent
+import threading
 
+from pyinotify import WatchManager, Notifier, ThreadedNotifier, EventsCodes, ProcessEvent
+lk = threading.Semaphore()
+lk1 = threading.Semaphore()
 ishani='/home/harsha/ishani/'
 buff_src_path=""
 def sock_send(fname, floc, code):
@@ -58,11 +61,13 @@ class MyProcessing(ProcessEvent):
 		pathname=""
 
 	def process_IN_CLOSE_WRITE(self, event):
+		lk.acquire()
 		print "in CLOSE WRITE ",event.pathname
 		self.buff_move_from_fun()
 		sock_send(event.name, event.pathname, "CREATE")
-		
+		lk.release()		
 	def process_IN_DELETE(self, event):
+		lk.acquire()	
 		print "in DELETE ",event.pathname
 		self.buff_move_from_fun()
 		if(event.name!=""):
@@ -70,8 +75,10 @@ class MyProcessing(ProcessEvent):
 				sock_send(event.name, event.pathname, "RMDIR")
 			else:
 				sock_send(event.name, event.pathname, "DELETE")
-
+		lk.release()
 	def process_IN_MOVED_FROM(self, event):
+		lk.acquire()
+		lk1.acquire()	
 		print "in MOVED_FROM of file ",event.pathname
 		self.move_from_flag=1
 		self.buff_dir=event.dir
@@ -79,7 +86,10 @@ class MyProcessing(ProcessEvent):
 		self.pathname=event.pathname
 		global buff_src_path
 		buff_src_path=event.pathname
+		lk1.release()
+		lk.release()		
 	def buff_move_from_fun(self):
+		lk1.acquire()
 		if self.move_from_flag==1:
 			if(self.name!=""):
 				if(self.buff_dir):
@@ -87,8 +97,14 @@ class MyProcessing(ProcessEvent):
 				else:
 					sock_send(self.name, self.pathname, "MOVED_FROM")
 			self.move_from_flag=0
+			self.name=""
+			self.pathname=""
+			self.buff_dir=False
+		lk1.release()	
 	def process_IN_MOVED_TO(self, event):
 		print "in MOVED_TO of file ",event.pathname
+		lk.acquire()
+		lk1.acquire()
 		if self.move_from_flag==1:
 			if(event.name!="" and self.name != ""):
 				if(event.dir):
@@ -96,15 +112,19 @@ class MyProcessing(ProcessEvent):
 				else:
 					sock_send(event.name, event.pathname, "MOVE")
 			self.move_from_flag=0;	
-			
+			self.name=""
+			self.pathname=""
+			self.buff_dir=False
 		else:
 			if(event.name!=""):
 				if(event.dir):
 					sock_send(event.name, event.pathname, "MKDIR")	
 				else:
 					sock_send(event.name, event.pathname, "MOVED_TO")
-
+		lk1.release()			
+		lk.release()	
 	def process_IN_CREATE(self, event):
+		lk.acquire()	
 		print "in CREATE of file ",event.pathname
 		self.buff_move_from_fun()
 		if(event.name!=""):
@@ -112,7 +132,7 @@ class MyProcessing(ProcessEvent):
 				sock_send(event.name, event.pathname, "MKDIR")
 			else:
 				sock_send(event.name, event.pathname, "CREATE")
-
+		lk.release()
 	def process_default(self, event):
 		#print "in default ",event.pathname
 		self.buff_move_from_fun()
@@ -120,5 +140,5 @@ class MyProcessing(ProcessEvent):
 wm = WatchManager()			#somethng which creates a manager like thing to look wat all folders are to take care of
 mask = pyinotify.ALL_EVENTS	#wat all events r to be notified
 wm.add_watch('/home/harsha/ishani', mask, rec=True,auto_add=True)
-notifier = Notifier(wm, MyProcessing())	# connecting d manager and methods to call
-notifier.loop()	# start
+notifier = ThreadedNotifier(wm, MyProcessing())	# connecting d manager and methods to call
+notifier.run()	# start
