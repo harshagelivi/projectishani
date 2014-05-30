@@ -25,21 +25,18 @@ class myThread (threading.Thread):
 		if notification_queue:
 			print "hello"
 			p=notification_queue.popleft()
-			sock_send(p[0],p[1],p[2])
-	
+			print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
+			sock_send(p[0],p[1],p[2],p[3])
 
-def sock_send(fname, floc, code):
-	global moved_from_flag
-	global moved_from_name
-	global moved_from_loc
+def sock_send(fname, floc, floc1, code):
 
 	if ((fname) and (fname[-1]!='~' and fname[0] !='.') ):
-		
-		if(code=="MOVED_TO" and moved_from_flag==1):
-			code="RENAMEDIR"
-		elif(moved_from_flag==1):
-			moved_from_flag=0
-			sock_send(moved_from_name, moved_from_loc,"RMDIR")
+		global moved_from_flag
+		global moved_from_name
+		global moved_from_loc
+		print "moved_from_flag", moved_from_flag
+		print "moved_from_loc", moved_from_loc
+		print "moved_from_name", moved_from_name
 
 		HOST =  ''   # The remote host
 		PORT = 12345# The same port as used by the server
@@ -63,7 +60,7 @@ def sock_send(fname, floc, code):
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			sock.connect((HOST, PORT))
-			prevfname=moved_from_loc.replace(path, '')
+			prevfname=floc1.replace(path, '')
 			sock.send(prevfname)
 			sock.close()
 			moved_from_flag=0
@@ -94,36 +91,56 @@ class MyProcessing(ProcessEvent):
 		pass
 	def process_IN_CLOSE_WRITE(self, event):
 		print "in close write ",event.pathname
-		notification_queue.append((event.name, event.pathname, "CREATE"))
+		notification_queue.append((event.name, event.pathname, '',"CREATE"))
 	def process_IN_DELETE(self, event):
 		print "in delete ",event.pathname
 		if(event.dir):
-			notification_queue.append((event.name, event.pathname, "RMDIR"))
+			notification_queue.append((event.name, event.pathname, '',"RMDIR"))
 		else:
-			notification_queue.append((event.name, event.pathname, "DELETE"))
+			notification_queue.append((event.name, event.pathname,'', "DELETE"))
 	def process_IN_CREATE(self, event):
 		print "in create ",event.pathname
 		if(event.dir):
-			notification_queue.append((event.name, event.pathname, "MKDIR"))
+			notification_queue.append((event.name, event.pathname, '',"MKDIR"))
 		else:
-			notification_queue.append((event.name, event.pathname, "CREATE"))
+			notification_queue.append((event.name, event.pathname,'', "CREATE"))
 	def process_IN_MOVED_FROM(self, event):
-		print "in moved from of file ",event.pathname
 		global moved_from_flag
 		global moved_from_name
 		global moved_from_loc
+		print "in moved from of file ",event.pathname
 		if (event.dir):
-			if(moved_from_flag==1):
-				sock_send(moved_from_name, moved_from_loc, "RMDIR")
+			if moved_from_flag==1:
+				notification_queue((moved_from_name, moved_from_loc, '' , "RMDIR"))
 			moved_from_flag	=	1
 			moved_from_name =	event.name
 			moved_from_loc	=	event.pathname
 		else:
-			notification_queue.append((event.name, event.pathname, "MOVED_FROM"))
+			notification_queue.append((event.name, event.pathname,'', "MOVED_FROM"))
 	def process_IN_MOVED_TO(self, event):
-		print "in moved from of file ",event.pathname
-		notification_queue.append((event.name, event.pathname, "MOVED_TO"))
+		print "in moved  to file ",event.pathname
+		global moved_from_flag
+		global moved_from_name
+		global moved_from_loc
+		if(event.dir):
+			if moved_from_flag==1:
+				notification_queue.append((event.name,  event.pathname,moved_from_loc, "RENAMEDIR"))
+				moved_from_flag	=	0
+				moved_from_name =	''
+				moved_from_loc	=	''
+				
+		else:
+			notification_queue.append((event.name, event.pathname,'', "MOVED_TO"))
 	def process_default(self, event):
+		global moved_from_flag
+		global moved_from_name
+		global moved_from_loc
+		if(moved_from_flag==1):
+			notification_queue.append((moved_from_name, moved_from_loc,'',"RMDIR"))
+		moved_from_flag	=	0
+		moved_from_name =	''
+		moved_from_loc	=	''
+	
 		print "in default ",event.pathname
 
 

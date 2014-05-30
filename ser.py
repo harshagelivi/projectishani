@@ -4,12 +4,10 @@ import threading
 import socket
 import time
 import os
+import shutil
+
 available_port=12344
 root_path='/home/madhu/trials/'
-
-
-
-
 def get_a_port():
 	global available_port
 	available_port=available_port+1
@@ -62,7 +60,8 @@ class myThread (threading.Thread):
 			print fname
 			floc=folder_ser+fname
 			try:
-				os.remove(os.path.join(folder_ser,fname))
+				'''os.remove(os.path.join(folder_ser,fname))'''
+				os.remove(floc)
 			except:
 				pass
 		elif (code=="MKDIR"):
@@ -74,9 +73,9 @@ class myThread (threading.Thread):
 				pass
 		elif (code=="RMDIR"):
 			fname=str(conn.recv(1024))
-			print fname
+			print "rmdir ----"+os.path.join(folder_ser,fname)
 			try:
-				os.rmdir(os.path.join(folder_ser,fname))
+				shutil.rmtree(os.path.join(folder_ser,fname))
 			except:
 				pass
 		elif (code=="RENAMEDIR"):
