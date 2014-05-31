@@ -5,6 +5,8 @@ A Simple Folder synchronisation application
 
 Developed in python and bash
 
-Folder ishani is tracked into ishani-ser and ishani-trash is used as a buffer to keep the temporarily deleted files.
-
+In /home/madhu/trials/vcreate two directories, 'ishani' and 'ishani-ser'
+Run ser.py, which is the server
+Run noti.py
+All the changes made in ishani will be tracked into ishani-ser
 
