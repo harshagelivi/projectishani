@@ -12,6 +12,18 @@ moved_from_flag	=	0
 moved_from_name =	''
 moved_from_loc	=	''
 
+smfr = threading.Semaphore()
+
+def check_moved_from():
+	global moved_from_flag
+	global moved_from_name
+	global moved_from_loc
+	if(moved_from_flag==1):
+		notification_queue.append((moved_from_name, moved_from_loc,'',"RMDIR"))
+	moved_from_flag	=	0
+	moved_from_name =	''
+	moved_from_loc	=	''
+
 
 class myThread (threading.Thread):
     def __init__(self, threadID,name):
@@ -92,15 +104,18 @@ class MyProcessing(ProcessEvent):
 		pass
 	def process_IN_CLOSE_WRITE(self, event):
 		print "in close write ",event.pathname
+		check_moved_from()
 		notification_queue.append((event.name, event.pathname, '',"CREATE"))
 	def process_IN_DELETE(self, event):
 		print "in delete ",event.pathname
+		check_moved_from()
 		if(event.dir):
 			notification_queue.append((event.name, event.pathname, '',"RMDIR"))
 		else:
 			notification_queue.append((event.name, event.pathname,'', "DELETE"))
 	def process_IN_CREATE(self, event):
 		print "in create ",event.pathname
+		check_moved_from()
 		if(event.dir):
 			notification_queue.append((event.name, event.pathname, '',"MKDIR"))
 		else:
@@ -133,15 +148,7 @@ class MyProcessing(ProcessEvent):
 		else:
 			notification_queue.append((event.name, event.pathname,'', "MOVED_TO"))
 	def process_default(self, event):
-		global moved_from_flag
-		global moved_from_name
-		global moved_from_loc
-		if(moved_from_flag==1):
-			notification_queue.append((moved_from_name, moved_from_loc,'',"RMDIR"))
-		moved_from_flag	=	0
-		moved_from_name =	''
-		moved_from_loc	=	''
-	
+		check_moved_from()
 		print "in default ",event.pathname
 
 

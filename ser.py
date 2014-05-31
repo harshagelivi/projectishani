@@ -28,7 +28,7 @@ class myThread (threading.Thread):
 	sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 	sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 	sock.bind((HOST, PORT))
-	sock.listen(30)
+	sock.listen(80)
 	from_stack=[]
 	folder=root_path+self.folder_name+'/'
 	folder_ser=root_path+self.folder_name+'-ser/'
@@ -41,9 +41,6 @@ class myThread (threading.Thread):
 		conn, addr = sock.accept()
 		if (code == "CREATE" or code=="MOVED_TO"):
 			fname=str(conn.recv(1024))
-			if(fname[-1]=='~' or fname[0]=='.'):
-				conn.close()
-				continue;
 			floc=folder_ser+fname
 			fd = open(floc, 'wb')
 			conn.close()
