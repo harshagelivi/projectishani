@@ -5,6 +5,7 @@ import socket
 import time
 import os
 import shutil
+import ast
 
 available_port=12344
 root_path='/home/madhu/trials/'
@@ -35,15 +36,16 @@ class myThread (threading.Thread):
 	folder_trash=root_path+self.folder_name+'-trash/'
 	while True:
 		conn, addr = sock.accept()
-		code=str(conn.recv(1024))
-		print code
+		literal=str(conn.recv(1024))
+		print literal
 		conn.close()
-		conn, addr = sock.accept()
+		tup=ast.literal_eval(literal)
+		code=tup[0]
+		fname=tup[1]
+		prevfname=tup[2]
 		if (code == "CREATE" or code=="MOVED_TO"):
-			fname=str(conn.recv(1024))
 			floc=folder_ser+fname
 			fd = open(floc, 'wb')
-			conn.close()
 			conn, addr = sock.accept()
 			if conn:
 				dat = conn.recv(1024)
@@ -53,7 +55,6 @@ class myThread (threading.Thread):
 						dat=conn.recv(1024)
 					fd.close()		
 		elif (code == "DELETE" or code=="MOVED_FROM"):
-			fname=str(conn.recv(1024))
 			print fname
 			floc=folder_ser+fname
 			try:
@@ -62,32 +63,25 @@ class myThread (threading.Thread):
 			except:
 				pass
 		elif (code=="MKDIR"):
-			fname=str(conn.recv(1024))
 			print fname
 			try:
 				os.mkdir(os.path.join(folder_ser,fname))
 			except:
 				pass
 		elif (code=="RMDIR"):
-			fname=str(conn.recv(1024))
 			print "rmdir ----"+os.path.join(folder_ser,fname)
 			try:
 				shutil.rmtree(os.path.join(folder_ser,fname))
 			except:
 				pass
 		elif (code=="RENAMEDIR"):
-			fname=str(conn.recv(1024))
 			print "fname  : "+fname			
-			conn.close()
-			conn, addr = sock.accept()			
-			prevfname=str(conn.recv(1024))
 			print "prevfname  : "+prevfname
 			print "---"+ os.path.join(folder_ser, prevfname)+"---"+os.path.join(folder_ser, fname)
 			try:
 				os.rename(os.path.join(folder_ser, prevfname), os.path.join(folder_ser, fname))
 			except:
 				pass
-		conn.close()
 		print "closed the connection"
         sock.close()
         print "closed the socket"

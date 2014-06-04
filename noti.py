@@ -47,17 +47,7 @@ def sock_send(fname, floc, floc1, code):
 		global moved_from_flag
 		global moved_from_name
 		global moved_from_loc
-		print "moved_from_flag", moved_from_flag
-		print "moved_from_loc", moved_from_loc
-		print "moved_from_name", moved_from_name
 
-		HOST =  ''   # The remote host
-		PORT = 12345# The same port as used by the server
-		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		sock.connect((HOST, PORT))
-		sock.send(code)
-		sock.close()
 
 		HOST =  ''   # The remote host
 		PORT = 12345# The same port as used by the server
@@ -65,25 +55,19 @@ def sock_send(fname, floc, floc1, code):
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.connect((HOST, PORT))
 		fname=floc.replace(path, '')
+		prevfname=''
 		if(code=="RENAMEDIR"):
-			sock.send(fname)
-			sock.close()
-			HOST =  ''   # The remote host
-			PORT = 12345# The same port as used by the server
-			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-			sock.connect((HOST, PORT))
 			prevfname=floc1.replace(path, '')
-			sock.send(prevfname)
+			literal= '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ']'
+			sock.send(literal)
 			sock.close()
 			moved_from_flag=0
 			moved_from_loc=''
 			moved_from_name=''
 		elif (code=="CREATE" or code=="MOVED_TO"):			
-			sock.send(fname)
+			literal = '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ']'
+			sock.send(literal)
 			sock.close()
-			HOST =  ''   # The remote host
-			PORT = 12345# The same port as used by the server
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			sock.connect((HOST, PORT))
@@ -96,9 +80,10 @@ def sock_send(fname, floc, floc1, code):
 			sock.close()
 			fd.close()
 		elif code=="DELETE" or code=="MOVED_FROM" or code=="MKDIR" or code=="RMDIR":
-			sock.send(fname)
+			literal = '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ']'
+			sock.send(literal)
 			sock.close()
-	
+
 class MyProcessing(ProcessEvent):
 	def __init__(self):
 		pass
@@ -144,7 +129,7 @@ class MyProcessing(ProcessEvent):
 				moved_from_flag	=	0
 				moved_from_name =	''
 				moved_from_loc	=	''
-				
+
 		else:
 			notification_queue.append((event.name, event.pathname,'', "MOVED_TO"))
 	def process_default(self, event):
