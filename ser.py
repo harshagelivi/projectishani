@@ -8,6 +8,12 @@ import shutil
 import ast
 from collections import deque
 
+users={}
+users[12348]=''
+users[12350]=''
+
+smfr = threading.Semaphore()
+
 available_port=12344
 root_path='/home/madhu/trials/'
 notification_q={}
@@ -41,8 +47,9 @@ class myThread (threading.Thread):
 		folder_ser=root_path+self.folder_name+'-ser/'
 		while True:
 			conn, addr = sock.accept()
+			print "CONNECTION ACCEPTED"
 			literal=str(conn.recv(1024))
-			print literal
+			print "RCVD:---->",literal
 			conn.close()
 			tup=ast.literal_eval(literal)
 			code=tup[0]
@@ -60,7 +67,7 @@ class myThread (threading.Thread):
 							dat=conn.recv(1024)
 						fd.close()		
 			elif (code == "DELETE" or code=="MOVED_FROM"):
-				print fname
+#				print fname
 				floc=folder_ser+fname
 				try:
 					'''os.remove(os.path.join(folder_ser,fname))'''
@@ -68,7 +75,7 @@ class myThread (threading.Thread):
 				except:
 					pass
 			elif (code=="MKDIR"):
-				print fname
+#				print fname
 				try:
 					os.mkdir(os.path.join(folder_ser,fname))
 				except:
@@ -80,43 +87,48 @@ class myThread (threading.Thread):
 				except:
 					pass
 			elif (code=="RENAMEDIR"):
-				print "fname  : "+fname			
-				print "prevfname  : "+prevfname
+#				print "fname  : "+fname			
+#				print "prevfname  : "+prevfname
 				print "---"+ os.path.join(folder_ser, prevfname)+"---"+os.path.join(folder_ser, fname)
 				try:
 					os.rename(os.path.join(folder_ser, prevfname), os.path.join(folder_ser, fname))
 				except:
 					pass
 		
-			print "closed the connection"
+#			print "closed the connection"
 			notification_q[self.folder_name].append(literal)
 		sock.close()
-		print "closed the socket"
+#		print "closed the socket"
 	elif self.name[0:3]=="snd":
-		HOST=''
-		PORT=12350
 		while True:
+			global users
 			if notification_q[self.folder_name]:
 				n=notification_q[self.folder_name].popleft()
 				tup=ast.literal_eval(n)
-				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-				sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-				sock.connect((HOST, PORT))
-				sock.send(n)
-				sock.close()
-				if tup[0]=="CREATE" or tup[0]=="MOVED_TO":
+				print "got tuple : ----------------->", tup
+				for i in users:
+					HOST=users[i]
+					PORT=i
+					print "sending-----> ",HOST,PORT,tup[0],tup[1],tup[2]
 					sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 					sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 					sock.connect((HOST, PORT))
-					print root_path+tup[1] + "---------> to be rewrited"
-					fd = open(root_path+self.folder_name+'/'+tup[1],'rb')
-					dat = fd.read(1024)
-					while dat:
-						print "sending data"
-						sock.send(dat)
-						dat=fd.read(1024)
-					fd.close()
+					sock.send(n)
 					sock.close()
+					if (tup[0]=="CREATE" or tup[0]=="MOVED_TO") and (int(tup[4]) != PORT or tup[3]!=HOST):
+						sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+						sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+						sock.connect((HOST, PORT))
+						print root_path+tup[1] + "---------> to be rewrited"
+						fd = open(root_path+self.folder_name+'/'+tup[1],'rb')
+						dat = fd.read(1024)
+						while dat:
+#							print "sending data"
+							sock.send(dat)
+							dat=fd.read(1024)
+						fd.close()
+						print "File sent"
+						sock.close()
 		
 threads = []
 
