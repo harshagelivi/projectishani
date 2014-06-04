@@ -49,7 +49,7 @@ class myThread (threading.Thread):
 			if notification_queue:
 				p=notification_queue.popleft()
 	#			print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
-	#			sock_send(p[0],p[1],p[2],p[3])
+				sock_send(p[0],p[1],p[2],p[3])
 	#			time.sleep(.005)
 	elif self.name[0:3]=="rcv":
 #	    	print "in receiver thread"
