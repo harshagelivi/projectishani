@@ -2,17 +2,18 @@ import os
 import threading
 import pyinotify
 import socket
+import ast
 from collections import deque
 import time
-notification_queue = deque()
-
 from pyinotify import WatchManager, Notifier, ThreadedNotifier, EventsCodes, ProcessEvent
-path="/home/madhu/trials/kiwi/"
+import shutil
+
 moved_from_flag	=	0
 moved_from_name =	''
 moved_from_loc	=	''
-
-smfr = threading.Semaphore()
+notification_queue = deque()
+recvr_q=deque()
+path="/home/madhu/ishani/"
 
 def check_moved_from():
 	global moved_from_flag
@@ -26,64 +27,110 @@ def check_moved_from():
 
 
 class myThread (threading.Thread):
-    def __init__(self, threadID,name):
+    def __init__(self, threadID,name, folder_name, root_path):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
+        self.folder_name=folder_name
+        self.root_path=root_path
+	
     def run(self):
-    	print "in thread"
-	global notification_queue
-	while  1:
-		if notification_queue:
-			print "hello"
-			p=notification_queue.popleft()
-			print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
-			sock_send(p[0],p[1],p[2],p[3])
-			time.sleep(.005)
+    	if self.name[0:3]=="snd":
+	    	print "in sender thread"
+		global notification_queue
+		while  1:
+			if notification_queue:
+				p=notification_queue.popleft()
+	#			print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
+	#			sock_send(p[0],p[1],p[2],p[3])
+				time.sleep(.005)
+	elif self.name[0:3]=="rcv":
+	    	print "in sender thread"
+		HOST=''
+		PORT=12350
+		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		sock.bind((HOST, PORT))
+		sock.listen(80)
+		folder=self.root_path+self.folder_name+"/"
+		while True:
+			conn, addr = sock.accept()
+			literal=str(conn.recv(1024))
+			print literal
+			conn.close()
+			tup=ast.literal_eval(literal)
+			code=tup[0]
+			fname=tup[1]
+			prevfname=tup[2]
+			if (code == "CREATE" or code=="MOVED_TO"):
+				floc=folder+fname
+				fd = open(floc, 'wb')
+				conn, addr = sock.accept()
+				if conn:
+					dat = conn.recv(1024)
+					if dat:
+						while dat:
+							fd.write(dat)
+							dat=conn.recv(1024)
+						fd.close()		
+			elif (code == "DELETE" or code=="MOVED_FROM"):
+				print fname
+				floc=folder+fname
+				try:
+					os.remove(floc)
+				except:
+					pass
+			elif (code=="MKDIR"):
+				print fname
+				try:
+					os.mkdir(os.path.join(folder,fname))
+				except:
+					pass
+			elif (code=="RMDIR"):
+				print "rmdir ----"+os.path.join(folder,fname)
+				try:
+					shutil.rmtree(os.path.join(folder,fname))
+				except:
+					print "in exception"
+					pass
+			elif (code=="RENAMEDIR"):
+				print "fname  : "+fname			
+				print "prevfname  : "+prevfname
+				print "---"+ os.path.join(folder, prevfname)+"---"+os.path.join(folder, fname)
+				try:
+					os.rename(os.path.join(folder, prevfname), os.path.join(folder, fname))
+				except:
+					pass
+			print "closed the connection"
+		sock.close()
+		print "closed the socket"
 
+		
 def sock_send(fname, floc, floc1, code):
 
-	if ((fname) and (fname[-1]!='~' and fname[0] !='.') ):
+	if ((fname)):
 		global moved_from_flag
 		global moved_from_name
 		global moved_from_loc
-		print "moved_from_flag", moved_from_flag
-		print "moved_from_loc", moved_from_loc
-		print "moved_from_name", moved_from_name
-
 		HOST =  ''   # The remote host
-		PORT = 12346# The same port as used by the server
-		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		sock.connect((HOST, PORT))
-		sock.send(code)
-		sock.close()
-
-		HOST =  ''   # The remote host
-		PORT = 12346# The same port as used by the server
+		PORT = 12345# The same port as used by the server
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.connect((HOST, PORT))
 		fname=floc.replace(path, '')
+		prevfname=''
 		if(code=="RENAMEDIR"):
-			sock.send(fname)
-			sock.close()
-			HOST =  ''   # The remote host
-			PORT = 12346# The same port as used by the server
-			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-			sock.connect((HOST, PORT))
 			prevfname=floc1.replace(path, '')
-			sock.send(prevfname)
+			literal= '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ']'
+			sock.send(literal)
 			sock.close()
 			moved_from_flag=0
 			moved_from_loc=''
 			moved_from_name=''
 		elif (code=="CREATE" or code=="MOVED_TO"):			
-			sock.send(fname)
+			literal = '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ']'
+			sock.send(literal)
 			sock.close()
-			HOST =  ''   # The remote host
-			PORT = 12346# The same port as used by the server
 			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			sock.connect((HOST, PORT))
@@ -96,9 +143,10 @@ def sock_send(fname, floc, floc1, code):
 			sock.close()
 			fd.close()
 		elif code=="DELETE" or code=="MOVED_FROM" or code=="MKDIR" or code=="RMDIR":
-			sock.send(fname)
+			literal = '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ']'
+			sock.send(literal)
 			sock.close()
-	
+
 class MyProcessing(ProcessEvent):
 	def __init__(self):
 		pass
@@ -144,12 +192,12 @@ class MyProcessing(ProcessEvent):
 				moved_from_flag	=	0
 				moved_from_name =	''
 				moved_from_loc	=	''
-				
+
 		else:
 			notification_queue.append((event.name, event.pathname,'', "MOVED_TO"))
 	def process_default(self, event):
 		check_moved_from()
-		print "in default ",event.pathname
+#		print "in default ",event.pathname
 
 
 
@@ -157,9 +205,27 @@ class MyProcessing(ProcessEvent):
 
 wm = WatchManager()			#somethng which creates a manager like thing to look wat all folders are to take care of
 mask = pyinotify.ALL_EVENTS	#wat all events r to be notified
-wm.add_watch('/home/madhu/trials/kiwi', mask, rec=True,auto_add=True)
+wm.add_watch('/home/madhu/ishani', mask, rec=True,auto_add=True)
 notifier = Notifier(wm, MyProcessing())	# connecting d manager and methods to call
-thread1=myThread(1,"kiwi-thread")
+thread1=myThread(1,"snd-ishani-thread", "ishani", "/home/madhu/")
+thread2=myThread(2,"rcv-ishani-thread" , "ishani", "/home/madhu/")
 thread1.start()
+thread2.start()
 notifier.loop()	# start
 print "thread started"
+
+'''
+create folder /home/madhu/trials/ishani  ----> let it be folder1
+create folder /home/madhu/trials/ishani-ser----> let it be server
+create folder /home/madhu/ishani----> let it be folder2
+changes made in folder 1 will be tracked into server, which forwards the change requests to folder2..
+hence changes made in folder 1 will be reflected in folder2, via server
+folder1--->noti.py
+folder2-->noti1.py
+server-->ser.py
+noti.py doesnt listen
+noti1.py listens at port 12350, localhost
+server listens at 12345, localhost
+
+'''
+

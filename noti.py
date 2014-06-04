@@ -35,7 +35,6 @@ class myThread (threading.Thread):
 	global notification_queue
 	while  1:
 		if notification_queue:
-			print "hello"
 			p=notification_queue.popleft()
 			print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
 			sock_send(p[0],p[1],p[2],p[3])
@@ -43,7 +42,7 @@ class myThread (threading.Thread):
 
 def sock_send(fname, floc, floc1, code):
 
-	if ((fname) and (fname[-1]!='~' and fname[0] !='.') ):
+	if ((fname)):
 		global moved_from_flag
 		global moved_from_name
 		global moved_from_loc
@@ -148,3 +147,20 @@ thread1=myThread(1,"ishani-thread")
 thread1.start()
 notifier.loop()	# start
 print "thread started"
+
+
+'''
+create folder /home/madhu/trials/ishani  ----> let it be folder1
+create folder /home/madhu/trials/ishani-ser----> let it be server
+create folder /home/madhu/ishani----> let it be folder2
+changes made in folder 1 will be tracked into server, which forwards the change requests to folder2..
+hence changes made in folder 1 will be reflected in folder2, via server
+folder1--->noti.py
+folder2-->noti1.py
+server-->ser.py
+noti.py doesnt listen
+noti1.py listens at port 12350, localhost
+server listens at 12345, localhost
+
+'''
+
