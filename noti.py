@@ -17,7 +17,7 @@ path="/home/madhu/trials/ishani/"
 myhost=''
 myport=0
 send_flag=1
-
+flag=1
 def check_moved_from():
 	global moved_from_flag
 	global moved_from_name
@@ -82,6 +82,7 @@ class myThread (threading.Thread):
 			myhost=tup[3]
 			myport=int(tup[4])
 			notification_queue.append(("STOP", "STOP", '', "STOP"))
+			flag=0
 			if self.myport!=myport or self.myhost!=myhost:
 				if (code == "CREATE" or code=="MOVED_TO"):
 					floc=folder+fname
@@ -124,6 +125,7 @@ class myThread (threading.Thread):
 						pass
 #				print "closed the connection"
 			notification_queue.append(("START", "START", '', "START"))
+			flag=1
 		sock.close()
 #		print "closed the socket"
 
@@ -176,50 +178,59 @@ class MyProcessing(ProcessEvent):
 		pass
 	def process_IN_CLOSE_WRITE(self, event):
 #		print "in close write ",event.pathname
-		check_moved_from()
-		notification_queue.append((event.name, event.pathname, '',"CREATE"))
+		global flag
+		if flag:
+			check_moved_from()
+			notification_queue.append((event.name, event.pathname, '',"CREATE"))
 	def process_IN_DELETE(self, event):
 #		print "in delete ",event.pathname
-		check_moved_from()
-
-		if(event.dir):
-			notification_queue.append((event.name, event.pathname, '',"RMDIR"))
-		else:
-			notification_queue.append((event.name, event.pathname,'', "DELETE"))
+		global flag
+		if flag:
+			check_moved_from()
+			if(event.dir):
+				notification_queue.append((event.name, event.pathname, '',"RMDIR"))
+			else:
+				notification_queue.append((event.name, event.pathname,'', "DELETE"))
 	def process_IN_CREATE(self, event):
 #		print "in create ",event.pathname
-		check_moved_from()
-		if(event.dir):
-			notification_queue.append((event.name, event.pathname, '',"MKDIR"))
-		else:
-			notification_queue.append((event.name, event.pathname,'', "CREATE"))
+		global flag
+		if flag:
+			check_moved_from()
+			if(event.dir):
+				notification_queue.append((event.name, event.pathname, '',"MKDIR"))
+			else:
+				notification_queue.append((event.name, event.pathname,'', "CREATE"))
 	def process_IN_MOVED_FROM(self, event):
-		global moved_from_flag
-		global moved_from_name
-		global moved_from_loc
-#		print "in moved from of file ",event.pathname
-		if (event.dir):
-			if moved_from_flag==1:
-				notification_queue((moved_from_name, moved_from_loc, '' , "RMDIR"))
-			moved_from_flag	=	1
-			moved_from_name =	event.name
-			moved_from_loc	=	event.pathname
-		else:
-			notification_queue.append((event.name, event.pathname,'', "MOVED_FROM"))
+		global flag
+		if flag:
+			global moved_from_flag
+			global moved_from_name
+			global moved_from_loc
+	#		print "in moved from of file ",event.pathname
+			if (event.dir):
+				if moved_from_flag==1:
+					notification_queue((moved_from_name, moved_from_loc, '' , "RMDIR"))
+				moved_from_flag	=	1
+				moved_from_name =	event.name
+				moved_from_loc	=	event.pathname
+			else:
+				notification_queue.append((event.name, event.pathname,'', "MOVED_FROM"))
 	def process_IN_MOVED_TO(self, event):
 #		print "in moved  to file ",event.pathname
-		global moved_from_flag
-		global moved_from_name
-		global moved_from_loc
-		if(event.dir):
-			if moved_from_flag==1:
-				notification_queue.append((event.name,  event.pathname,moved_from_loc, "RENAMEDIR"))
-				moved_from_flag	=	0
-				moved_from_name =	''
-				moved_from_loc	=	''
+		global flag
+		if flag:
+			global moved_from_flag
+			global moved_from_name
+			global moved_from_loc
+			if(event.dir):
+				if moved_from_flag==1:
+					notification_queue.append((event.name,  event.pathname,moved_from_loc, "RENAMEDIR"))
+					moved_from_flag	=	0
+					moved_from_name =	''
+					moved_from_loc	=	''
 
-		else:
-			notification_queue.append((event.name, event.pathname,'', "MOVED_TO"))
+			else:
+				notification_queue.append((event.name, event.pathname,'', "MOVED_TO"))
 	def process_default(self, event):
 		check_moved_from()
 #		print "in default ",event.pathname
