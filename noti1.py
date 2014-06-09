@@ -7,7 +7,7 @@ from collections import deque
 import time
 from pyinotify import WatchManager, Notifier, ThreadedNotifier, EventsCodes, ProcessEvent
 import shutil
-flag=0
+
 moved_from_flag	=	0
 moved_from_name =	''
 moved_from_loc	=	''
@@ -16,6 +16,8 @@ recvr_q=deque()
 path="/home/madhu/ishani/"
 myhost=''
 myport=0
+send_flag=1
+
 def check_moved_from():
 	global moved_from_flag
 	global moved_from_name
@@ -40,17 +42,24 @@ class myThread (threading.Thread):
         global myport
         myhost=self.myhost
         myport=self.myport			#my_host and my_port are local
-	
+
     def run(self):
+	global flag
+	global send_flag
+	global notification_queue
     	if self.name[0:3]=="snd":
 #	    	print "in sender thread"
-		global notification_queue
 		while  1:
 			if notification_queue:
 				p=notification_queue.popleft()
-	#			print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
-				sock_send(p[0],p[1],p[2],p[3])
-	#			time.sleep(.005)
+				print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
+				if p[3]=="STOP":
+					send_flag=0
+				elif p[3]=="START":
+					send_flag=1
+				if send_flag==1 and p[3]!="START" and p[3]!="STOP" and p[0] and p[0][0]!='.' and p[0][-1]!='~':
+					sock_send(p[0],p[1],p[2],p[3])
+					time.sleep(.005)
 	elif self.name[0:3]=="rcv":
 #	    	print "in receiver thread"
 		HOST=self.myhost
@@ -63,16 +72,17 @@ class myThread (threading.Thread):
 		while True:
 			conn, addr = sock.accept()
 			literal=str(conn.recv(1024))
-			print literal
+#			print literal
+
 			conn.close()
 			tup=ast.literal_eval(literal)
-			flag=0
 			code=tup[0]
 			fname=tup[1]
 			prevfname=tup[2]
 			myhost=tup[3]
 			myport=int(tup[4])
-			if  self.myport!=myport or self.myhost!=myhost:
+			notification_queue.append(("STOP", "STOP", '', "STOP"))
+			if self.myport!=myport or self.myhost!=myhost:
 				if (code == "CREATE" or code=="MOVED_TO"):
 					floc=folder+fname
 					fd = open(floc, 'wb')
@@ -85,44 +95,43 @@ class myThread (threading.Thread):
 								dat=conn.recv(1024)
 							fd.close()		
 				elif (code == "DELETE" or code=="MOVED_FROM"):
-					print fname
+#					print fname
 					floc=folder+fname
 					try:
 						os.remove(floc)
 					except:
 						pass
 				elif (code=="MKDIR"):
-					print fname
+#					print fname
 					try:
 						os.mkdir(os.path.join(folder,fname))
 					except:
 						pass
 				elif (code=="RMDIR"):
-					print "rmdir ----"+os.path.join(folder,fname)
+#					print "rmdir ----"+os.path.join(folder,fname)
 					try:
 						shutil.rmtree(os.path.join(folder,fname))
 					except:
-						print "in exception"
+#						print "in exception"
 						pass
 				elif (code=="RENAMEDIR"):
 #					print "fname  : "+fname			
 #					print "prevfname  : "+prevfname
-					print "---"+ os.path.join(folder, prevfname)+"---"+os.path.join(folder, fname)
+#					print "---"+ os.path.join(folder, prevfname)+"---"+os.path.join(folder, fname)
 					try:
 						os.rename(os.path.join(folder, prevfname), os.path.join(folder, fname))
 					except:
 						pass
 #				print "closed the connection"
-				flag=1
-		
+			notification_queue.append(("START", "START", '', "START"))
 		sock.close()
 #		print "closed the socket"
 
-		
+
 def sock_send(fname, floc, floc1, code):
 	global myhost
 	global myport
-	
+
 	if ((fname)):
 		global moved_from_flag
 		global moved_from_name
@@ -172,6 +181,7 @@ class MyProcessing(ProcessEvent):
 	def process_IN_DELETE(self, event):
 #		print "in delete ",event.pathname
 		check_moved_from()
+
 		if(event.dir):
 			notification_queue.append((event.name, event.pathname, '',"RMDIR"))
 		else:
@@ -204,12 +214,12 @@ class MyProcessing(ProcessEvent):
 		if(event.dir):
 			if moved_from_flag==1:
 				notification_queue.append((event.name,  event.pathname,moved_from_loc, "RENAMEDIR"))
-			moved_from_flag	=	0
-			moved_from_name =	''
-			moved_from_loc	=	''
+				moved_from_flag	=	0
+				moved_from_name =	''
+				moved_from_loc	=	''
+
 		else:
 			notification_queue.append((event.name, event.pathname,'', "MOVED_TO"))
-
 	def process_default(self, event):
 		check_moved_from()
 #		print "in default ",event.pathname
@@ -227,7 +237,7 @@ thread2=myThread(2,"rcv-ishani-thread" , "ishani", "/home/madhu/", '', 12350)
 thread1.start()
 thread2.start()
 notifier.loop()	# start
-print "thread started"
+#print "thread started"
 
 '''
 create folder /home/madhu/trials/ishani  ----> let it be folder1

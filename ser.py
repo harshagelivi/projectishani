@@ -47,11 +47,14 @@ class myThread (threading.Thread):
 		folder_ser=root_path+self.folder_name+'-ser/'
 		while True:
 			conn, addr = sock.accept()
-			print "CONNECTION ACCEPTED"
+#			print "CONNECTION ACCEPTED"
 			literal=str(conn.recv(1024))
 			print "RCVD:---->",literal
 			conn.close()
-			tup=ast.literal_eval(literal)
+			try:
+				tup=ast.literal_eval(literal)
+			except:
+				print "LITERAL NOT RECIEVED"
 			code=tup[0]
 			fname=tup[1]
 			prevfname=tup[2]
@@ -65,7 +68,7 @@ class myThread (threading.Thread):
 						while dat:
 							fd.write(dat)
 							dat=conn.recv(1024)
-						fd.close()		
+						fd.close()			
 			elif (code == "DELETE" or code=="MOVED_FROM"):
 #				print fname
 				floc=folder_ser+fname
@@ -81,7 +84,7 @@ class myThread (threading.Thread):
 				except:
 					pass
 			elif (code=="RMDIR"):
-				print "rmdir ----"+os.path.join(folder_ser,fname)
+#				print "rmdir ----"+os.path.join(folder_ser,fname)
 				try:
 					shutil.rmtree(os.path.join(folder_ser,fname))
 				except:
@@ -89,12 +92,12 @@ class myThread (threading.Thread):
 			elif (code=="RENAMEDIR"):
 #				print "fname  : "+fname			
 #				print "prevfname  : "+prevfname
-				print "---"+ os.path.join(folder_ser, prevfname)+"---"+os.path.join(folder_ser, fname)
+#				print "---"+ os.path.join(folder_ser, prevfname)+"---"+os.path.join(folder_ser, fname)
 				try:
 					os.rename(os.path.join(folder_ser, prevfname), os.path.join(folder_ser, fname))
 				except:
 					pass
-		
+
 #			print "closed the connection"
 			notification_q[self.folder_name].append(literal)
 		sock.close()
@@ -119,8 +122,8 @@ class myThread (threading.Thread):
 						sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 						sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 						sock.connect((HOST, PORT))
-						print root_path+tup[1] + "---------> to be rewrited"
-						fd = open(root_path+self.folder_name+'/'+tup[1],'rb')
+#						print root_path+tup[1] + "---------> to be rewrited"
+						fd = open(root_path+self.folder_name+'-ser/'+tup[1],'rb')
 						dat = fd.read(1024)
 						while dat:
 #							print "sending data"
@@ -129,7 +132,7 @@ class myThread (threading.Thread):
 						fd.close()
 						print "File sent"
 						sock.close()
-		
+
 threads = []
 
 # Create new threads
