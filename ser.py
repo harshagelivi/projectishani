@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 import threading
 import socket
 import time
@@ -53,53 +51,53 @@ class myThread (threading.Thread):
 			conn.close()
 			try:
 				tup=ast.literal_eval(literal)
-			except:
-				print "LITERAL NOT RECIEVED"
-			code=tup[0]
-			fname=tup[1]
-			prevfname=tup[2]
-			if (code == "CREATE" or code=="MOVED_TO"):
-				floc=folder_ser+fname
-				fd = open(floc, 'wb')
-				conn, addr = sock.accept()
-				if conn:
-					dat = conn.recv(1024)
-					if dat:
-						while dat:
-							fd.write(dat)
-							dat=conn.recv(1024)
-						fd.close()			
-			elif (code == "DELETE" or code=="MOVED_FROM"):
-#				print fname
-				floc=folder_ser+fname
-				try:
-					'''os.remove(os.path.join(folder_ser,fname))'''
-					os.remove(floc)
-				except:
-					pass
-			elif (code=="MKDIR"):
-#				print fname
-				try:
-					os.mkdir(os.path.join(folder_ser,fname))
-				except:
-					pass
-			elif (code=="RMDIR"):
-#				print "rmdir ----"+os.path.join(folder_ser,fname)
-				try:
-					shutil.rmtree(os.path.join(folder_ser,fname))
-				except:
-					pass
-			elif (code=="RENAMEDIR"):
-#				print "fname  : "+fname			
-#				print "prevfname  : "+prevfname
-#				print "---"+ os.path.join(folder_ser, prevfname)+"---"+os.path.join(folder_ser, fname)
-				try:
-					os.rename(os.path.join(folder_ser, prevfname), os.path.join(folder_ser, fname))
-				except:
-					pass
+				code=tup[0]
+				fname=tup[1]
+				prevfname=tup[2]
+				if (code == "CREATE" or code=="MOVED_TO"):
+					floc=folder_ser+fname
+					fd = open(floc, 'wb')
+					conn, addr = sock.accept()
+					if conn:
+						dat = conn.recv(1024)
+						if dat:
+							while dat:
+								fd.write(dat)
+								dat=conn.recv(1024)
+							fd.close()			
+				elif (code == "DELETE" or code=="MOVED_FROM"):
+	#				print fname
+					floc=folder_ser+fname
+					try:
+						'''os.remove(os.path.join(folder_ser,fname))'''
+						os.remove(floc)
+					except:
+						pass
+				elif (code=="MKDIR"):
+	#				print fname
+					try:
+						os.mkdir(os.path.join(folder_ser,fname))
+					except:
+						pass
+				elif (code=="RMDIR"):
+	#				print "rmdir ----"+os.path.join(folder_ser,fname)
+					try:
+						shutil.rmtree(os.path.join(folder_ser,fname))
+					except:
+						pass
+				elif (code=="RENAMEDIR"):
+	#				print "fname  : "+fname			
+	#				print "prevfname  : "+prevfname
+	#				print "---"+ os.path.join(folder_ser, prevfname)+"---"+os.path.join(folder_ser, fname)
+					try:
+						os.rename(os.path.join(folder_ser, prevfname), os.path.join(folder_ser, fname))
+					except:
+						pass
 
-#			print "closed the connection"
-			notification_q[self.folder_name].append(literal)
+	#			print "closed the connection"
+				notification_q[self.folder_name].append(literal)
+			except:
+				pass
 		sock.close()
 #		print "closed the socket"
 	elif self.name[0:3]=="snd":
@@ -166,4 +164,3 @@ noti1.py listens at port 12350, localhost
 server listens at 12345, localhost
 
 '''
-

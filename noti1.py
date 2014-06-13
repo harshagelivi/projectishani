@@ -143,37 +143,42 @@ def sock_send(fname, floc, floc1, code):
 		PORT = 12345# The same port as used by the server
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-		sock.connect((HOST, PORT))
-		fname=floc.replace(path, '')
-		prevfname=''
-		if(code=="RENAMEDIR"):
-			prevfname=floc1.replace(path, '')
-			literal= '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ',' + '"' + myhost + '"' +','+ '"'+str(myport)+'"' +']'
-			sock.send(literal)
-			sock.close()
-			moved_from_flag=0
-			moved_from_loc=''
-			moved_from_name=''
-		elif (code=="CREATE" or code=="MOVED_TO"):			
-			literal= '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ',' + '"' + myhost + '"' +','+ '"'+str(myport)+'"' +']'
-			sock.send(literal)
-			sock.close()
-			sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+		try:
 			sock.connect((HOST, PORT))
-			fd = open(floc,'rb')
-			dat = fd.read(1024)
-			while dat:
-#				print "sending data"
-				sock.send(dat)
-				dat=fd.read(1024)
-			sock.close()
-			fd.close()
-		elif code=="DELETE" or code=="MOVED_FROM" or code=="MKDIR" or code=="RMDIR":
-			literal= '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ',' + '"' + myhost + '"' +','+ '"'+str(myport)+'"' +']'
-			sock.send(literal)
-			sock.close()
-
+			fname=floc.replace(path, '')
+			prevfname=''
+			if(code=="RENAMEDIR"):
+				prevfname=floc1.replace(path, '')
+				literal= '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ',' + '"' + myhost + '"' +','+ '"'+str(myport)+'"' +']'
+				sock.send(literal)
+				sock.close()
+				moved_from_flag=0
+				moved_from_loc=''
+				moved_from_name=''
+			elif (code=="CREATE" or code=="MOVED_TO"):			
+				literal= '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ',' + '"' + myhost + '"' +','+ '"'+str(myport)+'"' +']'
+				sock.send(literal)
+				sock.close()
+				sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+				sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+				sock.connect((HOST, PORT))
+				try:
+					fd = open(floc,'rb')
+					dat = fd.read(1024)
+					while dat:
+		#				print "sending data"
+						sock.send(dat)
+						dat=fd.read(1024)
+					fd.close()
+				except:
+					pass
+				sock.close()
+			elif code=="DELETE" or code=="MOVED_FROM" or code=="MKDIR" or code=="RMDIR":
+				literal= '[' +'"'+code+'"'+ ','  +'"'+fname+'"'+ ',' +'"'+prevfname+'"'+ ',' + '"' + myhost + '"' +','+ '"'+str(myport)+'"' +']'
+				sock.send(literal)
+				sock.close()
+		except:
+			pass
 
 class MyProcessing(ProcessEvent):
 	def __init__(self):
