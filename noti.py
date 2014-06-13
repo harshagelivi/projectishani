@@ -12,6 +12,7 @@ moved_from_flag	=	0
 moved_from_name =	''
 moved_from_loc	=	''
 notification_queue = deque()
+send_queue={}
 recvr_q=deque()
 path="/home/madhu/trials/ishani/"
 myhost=''
@@ -42,25 +43,43 @@ class myThread (threading.Thread):
         self.myport=my_port
         global myhost
         global myport
+	global path
         myhost=self.myhost
         myport=self.myport			#my_host and my_port are local
-
+	path=root_path+folder_name+'/'
     def run(self):
 	global flag
 	global send_flag
 	global notification_queue
+	global send_queue
     	if self.name[0:3]=="snd":
 #	    	print "in sender thread"
 		while  1:
 			if notification_queue:
 				p=notification_queue.popleft()
-				print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
+				try:
+					for i in send_queue:
+						print i+':'+str(send_queue[i])
+				except:
+					pass
+#				print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
 				if p[3]=="STOP":
 					send_flag=0
 				elif p[3]=="START":
 					send_flag=1
 				if send_flag==1 and p[3]!="START" and p[3]!="STOP" and p[0] and p[0][0]!='.' and p[0][-1]!='~':
-					sock_send(p[0],p[1],p[2],p[3])
+					fname=p[1].replace(path,'')
+					prevfname=p[2].replace(path,'')
+					code=p[3]
+					index=fname+'_'+prevfname+'_'+code
+					print "to be sent---->"+index
+					try:
+						if send_queue[index]:
+							send_queue[index]=send_queue[index]-1
+						else:
+							sock_send(p[0],p[1],p[2],p[3])
+					except:
+						sock_send(p[0],p[1],p[2],p[3])
 					time.sleep(.005)
 	elif self.name[0:3]=="rcv":
 #	    	print "in receiver thread"
@@ -85,6 +104,8 @@ class myThread (threading.Thread):
 			myport=int(tup[4])
 			notification_queue.append(("STOP", "STOP", '', "STOP"))
 			flag=0
+			index=fname+'_'+prevfname+'_'+code
+			print "recieved---->"+index
 			if self.myport!=myport or self.myhost!=myhost:
 				if (code == "CREATE" or code=="MOVED_TO"):
 					floc=folder+fname
@@ -97,23 +118,39 @@ class myThread (threading.Thread):
 								fd.write(dat)
 								dat=conn.recv(1024)
 							fd.close()		
+					try:
+						send_queue[index]=send_queue[index]+1
+					except:
+						send_queue[index]=1
 				elif (code == "DELETE" or code=="MOVED_FROM"):
 #					print fname
 					floc=folder+fname
 					try:
 						os.remove(floc)
+						try:
+							send_queue[index]=send_queue[index]+1
+						except:
+							send_queue[index]=1
 					except:
 						pass
 				elif (code=="MKDIR"):
 #					print fname
 					try:
 						os.mkdir(os.path.join(folder,fname))
+						try:
+							send_queue[index]=send_queue[index]+1
+						except:
+							send_queue[index]=1
 					except:
 						pass
 				elif (code=="RMDIR"):
 #					print "rmdir ----"+os.path.join(folder,fname)
 					try:
 						shutil.rmtree(os.path.join(folder,fname))
+						try:
+							send_queue[index]=send_queue[index]+1
+						except:
+							send_queue[index]=1
 					except:
 #						print "in exception"
 						pass
@@ -123,6 +160,10 @@ class myThread (threading.Thread):
 #					print "---"+ os.path.join(folder, prevfname)+"---"+os.path.join(folder, fname)
 					try:
 						os.rename(os.path.join(folder, prevfname), os.path.join(folder, fname))
+						try:
+							send_queue[index]=send_queue[index]+1
+						except:
+							send_queue[index]=1
 					except:
 						pass
 #				print "closed the connection"
