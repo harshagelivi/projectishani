@@ -13,12 +13,13 @@ moved_from_name =	''
 moved_from_loc	=	''
 notification_queue = deque()
 send_queue={}
-recvr_q=deque()
-path="/home/madhu/ishani/"
+serverhost=''
+serverport=0
 myhost=''
 myport=0
 send_flag=1
 flag=1
+path=''
 
 
 def check_moved_from():
@@ -33,7 +34,7 @@ def check_moved_from():
 
 
 class myThread (threading.Thread):
-    def __init__(self, threadID,name, folder_name, root_path,my_host, my_port):
+    def __init__(self, threadID,name, folder_name, root_path,my_host, my_port, server_host, server_port):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
@@ -41,28 +42,29 @@ class myThread (threading.Thread):
         self.root_path=root_path
         self.myhost=my_host
         self.myport=my_port
+        self.server_port=server_port
+        self.server_host=server_host
         global myhost
         global myport
 	global path
+	global serverhost
+	global serverport
         myhost=self.myhost
         myport=self.myport			#my_host and my_port are local
+	serverport=self.server_port
+	serverhost=self.server_host
 	path=root_path+folder_name+'/'
     def run(self):
 	global flag
 	global send_flag
 	global notification_queue
 	global send_queue
+	global path
     	if self.name[0:3]=="snd":
 #	    	print "in sender thread"
 		while  1:
 			if notification_queue:
 				p=notification_queue.popleft()
-				try:
-					for i in send_queue:
-						print i+':'+str(send_queue[i])
-				except:
-					pass
-#				print p[0]+"------"+p[1]+"------"+p[2]+"--------"+p[3]
 				if p[3]=="STOP":
 					send_flag=0
 				elif p[3]=="START":
@@ -176,13 +178,14 @@ class myThread (threading.Thread):
 def sock_send(fname, floc, floc1, code):
 	global myhost
 	global myport
-
+	global serverhost
+	global serverport
 	if ((fname)):
 		global moved_from_flag
 		global moved_from_name
 		global moved_from_loc
-		HOST =  ''   # The remote host
-		PORT = 12345# The same port as used by the server
+		HOST =  serverhost	# The remote host
+		PORT =  serverport		# The same port as used by the server
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		try:
@@ -286,13 +289,19 @@ class MyProcessing(ProcessEvent):
 
 
 
+rootpath='/home/madhu/'
+folder='ishani'
+myp=12350
+myhs=''
+serp=12345
+serhs=''
 
 wm = WatchManager()			#somethng which creates a manager like thing to look wat all folders are to take care of
 mask = pyinotify.ALL_EVENTS	#wat all events r to be notified
-wm.add_watch('/home/madhu/ishani', mask, rec=True,auto_add=True)
+wm.add_watch(rootpath+folder, mask, rec=True,auto_add=True)
 notifier = Notifier(wm, MyProcessing())	# connecting d manager and methods to call
-thread1=myThread(1,"snd-ishani-thread", "ishani", "/home/madhu/", '', 12350)
-thread2=myThread(2,"rcv-ishani-thread" , "ishani", "/home/madhu/", '', 12350)
+thread1=myThread(1,'snd-'+folder+'-thread', folder, rootpath, myhs, myp, serhs, serp)
+thread2=myThread(2,'rcv-'+folder+'-thread', folder, rootpath, myhs, myp, serhs, serp)
 thread1.start()
 thread2.start()
 notifier.loop()	# start

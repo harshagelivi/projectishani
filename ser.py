@@ -22,24 +22,25 @@ def get_a_port():
 	return available_port
 
 class myThread (threading.Thread):
-    def __init__(self, threadID, name, port_num, folder_name):
+    def __init__(self, threadID, name, port_num, hostname,folder_name):
         threading.Thread.__init__(self)
         self.threadID = threadID
         self.name = name
 	self.port_num=port_num
 	self.folder_name=folder_name
+	self.host_name=hostname
 	global notification_q
 	notification_q[self.folder_name]=deque()
     def run(self):
 	global notification_q
 	if self.name[0:3]=="rcv":
 		global root_path
-		HOST = ''                 	# Symbolic name meaning all available interfaces
+		HOST = self.host_name                 	# Symbolic name meaning all available interfaces
 		PORT = self.port_num	  	# Arbitrary non-privileged port
 		sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		sock.bind((HOST, PORT))
-		sock.listen(80)
+		sock.listen(800)
 		from_stack=[]
 		folder=root_path+self.folder_name+'/'
 		folder_ser=root_path+self.folder_name+'-ser/'
@@ -132,10 +133,10 @@ class myThread (threading.Thread):
 						sock.close()
 
 threads = []
-
+hostname=''
 # Create new threads
-thread1 = myThread(1, "rcv-ishani-1", get_a_port(), "ishani");
-thread2 = myThread(2, "snd-ishani-1", 0, "ishani");
+thread1 = myThread(1, "rcv-ishani-1", get_a_port(), hostname,"ishani");
+thread2 = myThread(2, "snd-ishani-1", 0, hostname,"ishani");
 
 # Start new Threads
 thread1.start()
