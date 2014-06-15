@@ -8,7 +8,7 @@ from collections import deque
 
 users={}
 users[12348]=''
-#users[12350]=''
+users[12350]=''
 
 smfr = threading.Semaphore()
 
@@ -47,43 +47,47 @@ class myThread (threading.Thread):
 		sock.bind((HOST, PORT))
 		sock.listen(80)
 		while True:
-			conn, addr = sock.accept()
-			literal=str(conn.recv(1024))
-#			print "RCVD:---->",literal
-			received_q.append(literal)
-			conn.close()
+			try:
+				conn, addr = sock.accept()
+				literal=str(conn.recv(1024))
+	#			print "RCVD:---->",literal
+				received_q.append(literal)
+				conn.close()
+			except:
+				pass
 		sock.close()
 	elif self.name[0:3]=="snd":
 		global users
 		while True:
-			if notification_q[self.folder_name]:
-				n=notification_q[self.folder_name].popleft()
-				tup=ast.literal_eval(n)
-#				print "got tuple : ----------------->", tup
-				for i in users:
-					HOST=users[i]
-					PORT=i
-#					print "sending-----> ",HOST,PORT,tup[0],tup[1],tup[2]
-					sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-					sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-					sock.connect((HOST, PORT))
-					sock.send(n)
-					sock.close()
-					if (tup[0]=="CREATE" or tup[0]=="MOVED_TO") and (int(tup[4]) != PORT or tup[3]!=HOST):
+			try:
+				if notification_q[self.folder_name]:
+					n=notification_q[self.folder_name].popleft()
+					tup=ast.literal_eval(n)
+					for i in users:
+						HOST=users[i]
+						PORT=i
 						sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 						sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 						sock.connect((HOST, PORT))
-						try:
-							fd = open(root_path+self.folder_name+'-ser/'+tup[1],'rb')
-							dat = fd.read(1024)
-							while dat:
-								sock.send(dat)
-								dat=fd.read(1024)
-							fd.close()
-							print "File sent"
-						except:
-							pass
+						sock.send(n)
 						sock.close()
+						if (tup[0]=="CREATE" or tup[0]=="MOVED_TO") and (int(tup[4]) != PORT or tup[3]!=HOST):
+							sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+							sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+							sock.connect((HOST, PORT))
+							try:
+								fd = open(root_path+self.folder_name+'-ser/'+tup[1],'rb')
+								dat = fd.read(1024)
+								while dat:
+									sock.send(dat)
+									dat=fd.read(1024)
+								fd.close()
+								print "File sent"
+							except:
+								pass
+							sock.close()
+			except:
+				pass
 	elif self.name[0:3]=="pro":
 		HOST = self.host_name                 	# Symbolic name meaning all available interfaces
 		PORT = self.port_num_ft	  	# Arbitrary non-privileged port
@@ -95,58 +99,60 @@ class myThread (threading.Thread):
 		folder=root_path+self.folder_name+'/'
 		folder_ser=root_path+self.folder_name+'-ser/'
 		while True:
-			if received_q:
-				literal = received_q.popleft()
-				tup=ast.literal_eval(literal)
-				code=tup[0]
-				fname=tup[1]
-				prevfname=tup[2]
-				from_host=tup[3]
-				from_port=int(tup[4])
-				from_ft_port=int(tup[5])
-				if (code == "CREATE" or code=="MOVED_TO"):
+			try:
+				if received_q:
+					literal = received_q.popleft()
+					tup=ast.literal_eval(literal)
+					code=tup[0]
+					fname=tup[1]
+					prevfname=tup[2]
+					from_host=tup[3]
+					from_port=int(tup[4])
+					from_ft_port=int(tup[5])
 					print literal
-					snd_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-					snd_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-					snd_sock.connect((from_host,from_ft_port))
-					n= '[' +'"SEND_FILE"'+ ','  +'"'+fname+'"'+ ',' +'"' + HOST + '"' +','+ '"'+str(PORT)+'"' +']'
-					snd_sock.send(n)
-					snd_sock.close()
-					conn, addr = rcv_sock.accept()
-					floc=folder_ser+fname
-					fd = open(floc, 'wb')
-					if conn:
-						dat = conn.recv(1024)
-						if dat:
-							while dat:
-								fd.write(dat)
-								dat=conn.recv(1024)
-							fd.close()	
-						print "file recieved--->"+floc
-					conn.close()
-				elif (code == "DELETE" or code=="MOVED_FROM"):
-					floc=folder_ser+fname
-					try:
-						os.remove(floc)
-					except:
-						pass
-				elif (code=="MKDIR"):
-					try:
-						os.mkdir(os.path.join(folder_ser,fname))
-					except:
-						pass
-				elif (code=="RMDIR"):
-					try:
-						shutil.rmtree(os.path.join(folder_ser,fname))
-					except:
-						pass
-				elif (code=="RENAMEDIR"):
-					try:
-						os.rename(os.path.join(folder_ser, prevfname), os.path.join(folder_ser, fname))
-					except:
-						pass
-				notification_q[self.folder_name].append(literal)
-
+					if (code == "CREATE" or code=="MOVED_TO"):
+						snd_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+						snd_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+						snd_sock.connect((from_host,from_ft_port))
+						n= '[' +'"SEND_FILE"'+ ','  +'"'+fname+'"'+ ',' +'"' + HOST + '"' +','+ '"'+str(PORT)+'"' +']'
+						snd_sock.send(n)
+						snd_sock.close()
+						conn, addr = rcv_sock.accept()
+						floc=folder_ser+fname
+						fd = open(floc, 'wb')
+						if conn:
+							dat = conn.recv(1024)
+							if dat:
+								while dat:
+									fd.write(dat)
+									dat=conn.recv(1024)
+								fd.close()	
+#							print "file recieved--->"+floc
+						conn.close()
+					elif (code == "DELETE" or code=="MOVED_FROM"):
+						floc=folder_ser+fname
+						try:
+							os.remove(floc)
+						except:
+							pass
+					elif (code=="MKDIR"):
+						try:
+							os.mkdir(os.path.join(folder_ser,fname))
+						except:
+							pass
+					elif (code=="RMDIR"):
+						try:
+							shutil.rmtree(os.path.join(folder_ser,fname))
+						except:
+							pass
+					elif (code=="RENAMEDIR"):
+						try:
+							os.rename(os.path.join(folder_ser, prevfname), os.path.join(folder_ser, fname))
+						except:
+							pass
+					notification_q[self.folder_name].append(literal)
+			except:
+				pass
 threads = []
 hostname=''
 mainport=12345
